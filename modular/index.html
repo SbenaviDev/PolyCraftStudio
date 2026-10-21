@@ -1,0 +1,274 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>PolyCraft Studio Web · Low Poly para Pepakura</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600&family=Bricolage+Grotesque:opsz,wght@12..96,600&family=JetBrains+Mono:wght@400;500&display=swap" />
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+<canvas id="view" tabindex="0"></canvas>
+
+<header class="topbar">
+  <div class="brand" title="PolyCraft Studio Web">
+    <svg viewBox="0 0 32 32" aria-hidden="true">
+      <path d="M16 2 29 9.5v13L16 30 3 22.5v-13Z" fill="#f8f7f1" stroke="#13221b" stroke-width="2" stroke-linejoin="round"/>
+      <path d="M16 2v28M3 9.5 29 22.5" stroke="#13221b" stroke-width="1.6" stroke-dasharray="3 2.2"/>
+      <path d="M16 2 29 9.5 16 16Z" fill="#ffc53d" stroke="#13221b" stroke-width="2" stroke-linejoin="round"/>
+    </svg>
+    PolyCraft <small>Studio Web</small>
+  </div>
+  <div class="seg" id="modeSeg" role="group" aria-label="Modo">
+    <button data-mode="object" title="Modo objeto (Tab)">Objeto</button>
+    <button data-mode="edit" title="Modo edición (Tab)">Edición</button>
+  </div>
+  <div class="seg" id="selSeg" role="group" aria-label="Tipo de selección">
+    <button data-sel="v" title="Seleccionar vértices (1)"><kbd>1</kbd>Vértices</button>
+    <button data-sel="e" title="Seleccionar aristas (2)"><kbd>2</kbd>Aristas</button>
+    <button data-sel="f" title="Seleccionar caras (3)"><kbd>3</kbd>Caras</button>
+  </div>
+  <div class="spacer"></div>
+  <button class="btn" data-act="undo" title="Deshacer (Ctrl+Z)" aria-label="Deshacer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg></button>
+  <button class="btn" data-act="redo" title="Rehacer (Ctrl+Shift+Z)" aria-label="Rehacer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 14 5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/></svg></button>
+  <button class="btn" data-act="import" title="Importar .OBJ, .STL o .FBX"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>Importar</button>
+  <button class="btn primary" data-act="export" title="Descargar .OBJ para Pepakura"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21V9"/><path d="m7 14 5-5 5 5"/><path d="M5 3h14"/></svg>Exportar OBJ</button>
+  <button class="btn" data-act="help" title="Atajos y ayuda (F1)" aria-label="Ayuda">?</button>
+  <input type="file" id="file" accept=".obj,.stl,.fbx" hidden />
+</header>
+
+<aside class="tools" aria-label="Herramientas">
+  <h6>Transformar</h6>
+  <button class="tool" data-act="move"><svg viewBox="0 0 24 24"><path d="M12 3v18M3 12h18M12 3l-3 3M12 3l3 3M12 21l-3-3M12 21l3-3M3 12l3-3M3 12l3 3M21 12l-3-3M21 12l-3 3"/></svg><span>Mover</span><kbd>G</kbd></button>
+  <button class="tool" data-act="rotate"><svg viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.3-5.7"/><path d="M20 4v5h-5"/></svg><span>Rotar</span><kbd>R</kbd></button>
+  <button class="tool" data-act="scale"><svg viewBox="0 0 24 24"><path d="M4 14v6h6"/><path d="M4 20 20 4"/><path d="M14 4h6v6"/></svg><span>Escalar</span><kbd>S</kbd></button>
+  <h6>Editar vértices</h6>
+  <button class="tool" data-act="addVertex"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg><span>Añadir vértice</span><kbd>V</kbd></button>
+  <button class="tool" data-act="knife"><svg viewBox="0 0 24 24"><path d="M3 21 13 11M14 10l3-3 4 4-3 3M10 14 21 3"/></svg><span>Cuchillo</span><kbd>K</kbd></button>
+  <button class="tool" data-act="connect"><svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="2"/><circle cx="19" cy="12" r="2"/><path d="M7 12h10"/></svg><span>Conectar</span><kbd>J</kbd></button>
+  <h6>Malla</h6>
+  <button class="tool" data-act="createFace"><svg viewBox="0 0 24 24"><path d="M12 2 22 8.5v7L12 22 2 15.5v-7Z"/><circle cx="12" cy="2" r="1.5"/><circle cx="22" cy="8.5" r="1.5"/><circle cx="22" cy="15.5" r="1.5"/><circle cx="12" cy="22" r="1.5"/><circle cx="2" cy="15.5" r="1.5"/><circle cx="2" cy="8.5" r="1.5"/></svg><span>Crear cara</span><kbd>F</kbd></button>
+  <button class="tool" data-act="merge"><svg viewBox="0 0 24 24"><circle cx="5" cy="6" r="2"/><circle cx="5" cy="18" r="2"/><circle cx="19" cy="12" r="2.5"/><path d="M7 7l9.5 4M7 17l9.5-4"/></svg><span>Unir vértices</span><kbd>M</kbd></button>
+  <button class="tool" data-act="delete"><svg viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg><span>Eliminar / Disolver</span><kbd>X</kbd></button>
+  <button class="tool" data-act="flipNormals"><svg viewBox="0 0 24 24"><path d="M4 18h16"/><path d="M12 15V4"/><path d="m8 8 4-4 4 4"/></svg><span>Invertir normales</span></button>
+  <button class="tool" data-act="triangulate"><svg viewBox="0 0 24 24"><path d="M4 20h16L12 4Z"/><path d="M12 4v16M8 12l4 8"/></svg><span>Triangular</span></button>
+  <h6>Aristas</h6>
+  <button class="tool" data-act="split"><svg viewBox="0 0 24 24"><path d="M3 12h7M14 12h7"/><circle cx="12" cy="12" r="2.2"/></svg><span>Dividir</span></button>
+  <button class="tool" data-act="collapse"><svg viewBox="0 0 24 24"><path d="M3 12h6M21 12h-6"/><path d="m7 9 3 3-3 3M17 9l-3 3 3 3"/></svg><span>Colapsar</span></button>
+  <button class="tool" data-act="flipEdge"><svg viewBox="0 0 24 24"><path d="M12 3 21 12 12 21 3 12Z"/><path d="M3 12h18" stroke-dasharray="2 2.5"/><path d="M12 3v18"/></svg><span>Voltear (flip)</span></button>
+  <button class="tool" data-act="dissolve"><svg viewBox="0 0 24 24"><path d="M4 4h16v16H4Z"/><path d="M4 20 20 4" stroke-dasharray="2 2.5"/></svg><span>Disolver</span></button>
+  <h6>Seleccionar</h6>
+  <button class="tool" data-act="selectAll"><svg viewBox="0 0 24 24"><path d="M4 4h16v16H4Z" stroke-dasharray="3 2"/></svg><span>Todo</span><kbd>A</kbd></button>
+  <button class="tool" data-act="invertSel"><svg viewBox="0 0 24 24"><path d="M4 4h16v16H4Z"/><path d="M4 20 20 4V20Z" fill="#13221b"/></svg><span>Invertir</span></button>
+</aside>
+
+<aside class="panel" aria-label="Propiedades">
+  <div class="dogear"></div>
+  <details open>
+    <summary>Malla</summary>
+    <div class="body">
+      <div class="stats">
+        <div class="stat hero"><b id="stTris">0</b><span>triángulos para Pepakura</span></div>
+        <div class="stat"><b id="stVerts">0</b><span>vértices</span></div>
+        <div class="stat"><b id="stEdges">0</b><span>aristas</span></div>
+        <div class="stat"><b id="stFaces">0</b><span>caras</span></div>
+        <div class="stat"><b id="stSel">0</b><span id="stSelLbl">seleccionados</span></div>
+      </div>
+      <div class="chip-row" id="health"></div>
+    </div>
+  </details>
+
+  <details open>
+    <summary>Decimación</summary>
+    <div class="body">
+      <div class="decim-head"><b id="decPct">100%</b><span id="decInfo">—</span></div>
+      <input type="range" class="slider" id="decSlider" min="2" max="100" step="1" value="100" aria-label="Porcentaje de detalle conservado" />
+      <div class="row"><label for="decTarget">Triángulos objetivo</label><input type="number" class="num" id="decTarget" min="4" step="1" /></div>
+      <div class="muted" id="decNote">Arrastra para simplificar en tiempo real. Ctrl+Z vuelve al original.</div>
+    </div>
+  </details>
+
+  <details open>
+    <summary>Vista Previa</summary>
+    <div class="body">
+      <button class="wide" data-act="toggleRotate">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;vertical-align:middle;margin-right:4px;">
+          <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/>
+        </svg>
+        Rotación Automática
+      </button>
+      <div class="row">
+        <label for="rotateSpeed">Velocidad de rotación</label>
+        <input type="range" id="rotateSpeed" min="0.5" max="5" step="0.5" value="1" style="flex:1;" />
+        <span id="rotateSpeedLabel" style="min-width:30px;text-align:right;">1x</span>
+      </div>
+    </div>
+  </details>
+
+  <details open>
+    <summary>Low Poly</summary>
+    <div class="body">
+      <div class="row"><label for="copAngle">Ángulo coplanar (°)</label><input type="number" class="num" id="copAngle" value="1" min="0.1" max="45" step="0.5" /></div>
+      <button class="wide" data-act="coplanar">Unir caras coplanares en polígonos</button>
+      <div class="row"><label for="weldDist">Distancia de unión</label><input type="number" class="num" id="weldDist" value="0.01" min="0" step="0.01" /></div>
+      <button class="wide" data-act="weld">Unir vértices por distancia</button>
+      <div class="mini">
+        <button data-act="triangulateAll">Triangular todo</button>
+        <button data-act="center">Centrar en origen</button>
+      </div>
+    </div>
+  </details>
+
+  <details open>
+    <summary>Validación</summary>
+    <div class="body">
+      <label class="toggle"><input type="checkbox" id="tgNP" checked /> Resaltar caras no planas</label>
+      <div class="row"><label for="npTol">Tolerancia de planitud (%)</label><input type="number" class="num" id="npTol" value="1" min="0.01" max="20" step="0.1" /></div>
+      <label class="toggle"><input type="checkbox" id="tgFold" /> Ver pliegues monte / valle</label>
+      <div class="legend" id="foldLegend" hidden><span style="--c:#13221b">monte</span><span style="--c:#2f6fd0">valle</span><span style="--c:#9fc4b0">plano</span></div>
+      <div class="mini">
+        <button data-act="selectNP">Sel. no planas</button>
+        <button data-act="selectBoundary">Sel. bordes abiertos</button>
+        <button data-act="triangulateNP">Triangular no planas</button>
+        <button data-act="analyze">Solo analizar</button>
+      </div>
+      <button class="repair" data-act="repair"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.6 2.6-2.4-.6-.6-2.4Z"/></svg>Analizar y Reparar Malla</button>
+      <ul class="report" id="report" hidden></ul>
+    </div>
+  </details>
+
+  <details open>
+    <summary>Exportar a Pepakura</summary>
+    <div class="body">
+      <div class="row"><label for="fileName">Nombre</label></div>
+      <input type="text" class="text" id="fileName" value="polycraft_modelo" />
+      <div class="row"><label for="unit">Unidad del modelo</label><select class="num" id="unit"><option value="mm" selected>mm</option><option value="cm">cm</option><option value="m">m</option><option value="in">pulgadas</option></select></div>
+      <div class="row"><label for="expScale">Escala (1 = 1:1)</label><input type="number" class="num" id="expScale" value="1" min="0.0001" step="0.1" /></div>
+      <label class="toggle"><input type="checkbox" id="tgTri" checked /> Triangular al exportar</label>
+      <button class="download" data-act="export">Descargar .OBJ</button>
+    </div>
+  </details>
+
+  <details>
+    <summary>Empezar desde una forma</summary>
+    <div class="body">
+      <div class="mini">
+        <button data-act="prim:ico">Icoesfera</button>
+        <button data-act="prim:cube">Cubo</button>
+        <button data-act="prim:cyl">Cilindro</button>
+        <button data-act="prim:torus">Toroide</button>
+      </div>
+    </div>
+  </details>
+
+  <details>
+    <summary>Vista</summary>
+    <div class="body">
+      <label class="toggle"><input type="checkbox" id="tgEdges" checked /> Mostrar aristas</label>
+      <label class="toggle"><input type="checkbox" id="tgXray" /> Rayos X (seleccionar a través)</label>
+    </div>
+  </details>
+
+  <details>
+    <summary>Pintar caras</summary>
+    <div class="body">
+      <div class="row"><label for="paintColor">Color</label><input type="color" class="num" id="paintColor" value="#ff6b6b" style="width:92px;height:34px;border-radius:8px;cursor:pointer" /></div>
+      <button class="wide" id="paintBtn">Pintar caras seleccionadas</button>
+      <button class="wide" id="clearColorsBtn">Borrar todos los colores</button>
+      <div class="muted">Selecciona caras (modo 3) y elige un color</div>
+    </div>
+  </details>
+
+  <details>
+    <summary>Imagen de fondo</summary>
+    <div class="body">
+      <button class="wide" onclick="document.getElementById('bgFile').click()">Cargar imagen de referencia</button>
+      <input type="file" id="bgFile" accept="image/*" hidden />
+      <div class="row"><label for="bgOpacity">Opacidad</label><input type="range" class="slider" id="bgOpacity" min="0" max="1" step="0.05" value="0.5" /></div>
+      <div class="row"><label for="bgScale">Tamaño</label><input type="number" class="num" id="bgScale" value="200" min="10" step="10" /></div>
+      <button class="wide" id="clearBgBtn">Quitar imagen de fondo</button>
+      <div class="muted">La imagen aparece detrás del modelo como referencia</div>
+    </div>
+  </details>
+</aside>
+
+<footer class="status">
+  <div class="hint" id="hint"></div>
+  <div class="spacer"></div>
+  <div class="views" role="group" aria-label="Vistas">
+    <button data-act="view:front" title="Vista frontal (1 / Num1)">Frente</button>
+    <button data-act="view:side" title="Vista lateral (3 / Num3)">Lateral</button>
+    <button data-act="view:top" title="Vista superior (7 / Num7)">Superior</button>
+    <button data-act="focus" title="Enfocar selección (F)"><kbd>F</kbd>Enfocar</button>
+  </div>
+  <div class="dims" title="Tamaño real (caja envolvente)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 17 17 3l4 4L7 21Z"/><path d="m7 13 2 2M10 10l2 2M13 7l2 2"/></svg>
+    <span id="dims">—</span>
+  </div>
+</footer>
+
+<div id="hud"><div class="t" id="hudT"></div><div class="h" id="hudH"></div></div>
+<div id="box"></div>
+<div id="drop"><div>Suelta tu modelo aquí<small>.OBJ, .STL o .FBX · se conserva la escala</small></div></div>
+<div id="toasts"></div>
+
+<div id="help" role="dialog" aria-modal="true" aria-label="Ayuda">
+  <div class="sheet">
+    <button class="btn close" data-act="help">Cerrar</button>
+    <h2>Atajos de PolyCraft</h2>
+    <p>Pulsa <kbd>Tab</kbd> para alternar entre Objeto y Edición. En Edición, <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> cambian el tipo de selección; las vistas siempre están en el teclado numérico.</p>
+    <div class="cols">
+      <div><h3>Cámara</h3><dl>
+        <dt>Clic der. + arrastrar</dt><dd>Orbitar</dd>
+        <dt>Rueda + arrastrar</dt><dd>Panorámica</dd>
+        <dt>Shift + clic der.</dt><dd>Panorámica</dd>
+        <dt>Rueda</dt><dd>Zoom</dd>
+        <dt><kbd>F</kbd></dt><dd>Enfocar selección</dd>
+        <dt><kbd>Num1</kbd> <kbd>Num3</kbd> <kbd>Num7</kbd></dt><dd>Frente · Lateral · Superior</dd>
+        <dt><kbd>1</kbd> <kbd>3</kbd> <kbd>7</kbd></dt><dd>Vistas (en modo Objeto)</dd>
+        <dt><kbd>Ctrl</kbd> + Num</dt><dd>Vista opuesta</dd>
+      </dl></div>
+      <div><h3>Transformar</h3><dl>
+        <dt><kbd>G</kbd> <kbd>R</kbd> <kbd>S</kbd></dt><dd>Mover · Rotar · Escalar</dd>
+        <dt><kbd>X</kbd> <kbd>Y</kbd> <kbd>Z</kbd></dt><dd>Restringir a un eje</dd>
+        <dt>Teclear número</dt><dd>Valor exacto (mm, °, ×)</dd>
+        <dt><kbd>Ctrl</kbd> mantenido</dt><dd>Ajuste a pasos</dd>
+        <dt>Clic izq. / <kbd>Enter</kbd></dt><dd>Confirmar</dd>
+        <dt>Clic der. / <kbd>Esc</kbd></dt><dd>Cancelar</dd>
+        <dt>Arrastrar elemento</dt><dd>Mover sin pulsar G</dd>
+      </dl></div>
+      <div><h3>Selección y edición</h3><dl>
+        <dt><kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd></dt><dd>Vértices · Aristas · Caras</dd>
+        <dt>Clic / arrastrar</dt><dd>Seleccionar / caja</dd>
+        <dt><kbd>Shift</kbd> + clic</dt><dd>Añadir o quitar</dd>
+        <dt><kbd>A</kbd> · <kbd>Alt</kbd>+<kbd>A</kbd></dt><dd>Todo · Nada</dd>
+        <dt><kbd>Ctrl</kbd>+<kbd>I</kbd></dt><dd>Invertir selección</dd>
+        <dt><kbd>F</kbd></dt><dd>Crear cara desde vértices</dd>
+        <dt><kbd>X</kbd> / <kbd>Supr</kbd></dt><dd>Eliminar</dd>
+        <dt><kbd>Ctrl</kbd>+<kbd>X</kbd></dt><dd>Disolver sin huecos</dd>
+        <dt><kbd>M</kbd></dt><dd>Unir vértices en el centro</dd>
+        <dt><kbd>Ctrl</kbd>+<kbd>Z</kbd></dt><dd>Deshacer (Shift: rehacer)</dd>
+        <dt><kbd>Esc</kbd></dt><dd>Salir de herramienta / deseleccionar</dd>
+      </dl></div>
+      <div><h3>Añadir vértices</h3><dl>
+        <dt>Doble clic</dt><dd>Añadir vértice en arista o cara</dd>
+        <dt><kbd>V</kbd></dt><dd>Herramienta añadir vértice</dd>
+        <dt><kbd>Ctrl</kbd> (en herramienta)</dt><dd>Imán: punto medio, centro</dd>
+        <dt>Soltar vértice en otro</dt><dd>Fusión automática</dd>
+      </dl></div>
+      <div><h3>Herramientas avanzadas</h3><dl>
+        <dt><kbd>K</kbd></dt><dd>Cuchillo: cortar caras</dd>
+        <dt><kbd>J</kbd></dt><dd>Conectar vértices seleccionados</dd>
+        <dt><kbd>Shift</kbd>+<kbd>F</kbd></dt><dd>Enfocar selección</dd>
+        <dt><kbd>Enter</kbd></dt><dd>Aplicar cuchillo</dd>
+        <dt><kbd>Esc</kbd></dt><dd>Cancelar herramienta</dd>
+      </dl></div>
+    </div>
+  </div>
+</div>
+
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.185.1/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.185.1/examples/jsm/"}}</script>
+<script type="module" src="app.js"></script>
+</body>
+</html>
